@@ -8,7 +8,7 @@ import json
 from config import settings
 
 client = discord.Client()
-last = ''
+last = open('./last.txt').read()
 
 def rJson():
     path = './userslib/db.json'
@@ -46,45 +46,49 @@ def parseRSS(url):
 
 async def check(last):
     await client.wait_until_ready()
-    await asyncio.sleep(15)
 
-    res = parseRSS('https://tuttop.com/rss.xml')
-    text = { 'desc': res['desc'], 'sys': '', 'about': ''}
+    while not client.is_closed():
 
-    if last != res['title'].lower():
-        last = res['title'].lower()
-        resp = httpx.get(res['link']).text
-        start = resp.find('https://tuttop.com/torrent')
-        end = resp.find('.torrent', start)
-        url = resp[start:end + 8]
+        res = parseRSS('https://tuttop.com/rss.xml')
+        text = { 'desc': res['desc'], 'sys': '', 'about': ''}
 
-        db = rJson()
-        mention = []
+        if last != res['title'].lower():
+            last = res['title'].lower()
+            with open('./last.txt', 'w') as f:
+                f.write(last)
+
+            resp = httpx.get(res['link']).text
+            start = resp.find('https://tuttop.com/torrent')
+            end = resp.find('.torrent', start)
+            url = resp[start:end + 8]
+
+            db = rJson()
+            mention = []
         
-        for u in db.keys():
-            for t in db[u]:
-                if last.find(t) != -1:
-                    mention.append(f'<@{u}>')
+            for u in db.keys():
+                for t in db[u]:
+                    if last.find(t) != -1:
+                        mention.append(f'<@{u}>')
 
-        for i in res['sys']:
-            word = i.partition(':')[0]
-            i = i.replace(word, f"`{word}`")
-            text['sys'] += (i + '\n')
-        for i in res['about']:
-            word = i.partition(':')[0]
-            i = i.replace(word, f"`{word}`")
-            text['about'] += (i + '\n')
+            for i in res['sys']:
+                word = i.partition(':')[0]
+                i = i.replace(word, f"`{word}`")
+                text['sys'] += (i + '\n')
+            for i in res['about']:
+                word = i.partition(':')[0]
+                i = i.replace(word, f"`{word}`")
+                text['about'] += (i + '\n')
         
-        embed = discord.Embed(
-            color=0x3498db,
-            title=res['title'],
-            description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Torrent]({url})"
-            )
-        embed.set_image(url=res['img'])
+            embed = discord.Embed(
+                color=0x3498db,
+                title=res['title'],
+                description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Torrent]({url})"
+                )
+            embed.set_image(url=res['img'])
 
-        if not client.is_closed():
             channel = client.get_channel(settings['channel'])
             await channel.send(' '.join(mention), embed=embed)
+            await asyncio.sleep(15)
 
 @client.event
 async def on_ready():
