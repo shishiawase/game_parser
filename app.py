@@ -82,7 +82,7 @@ async def check(last):
             embed = discord.Embed(
                 color=0x3498db,
                 title=res['title'],
-                description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Torrent]({url})"
+                description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
                 )
             embed.set_image(url=res['img'])
 
