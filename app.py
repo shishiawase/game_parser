@@ -47,7 +47,7 @@ def parseRSS(url):
 async def check(last):
     await client.wait_until_ready()
 
-    while not client.is_closed():
+    while True:
 
         res = parseRSS('https://tuttop.com/rss.xml')
         text = { 'desc': res['desc'], 'sys': '', 'about': ''}
