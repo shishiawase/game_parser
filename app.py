@@ -2,7 +2,6 @@
 
 import feedparser
 import discord
-import asyncio
 import httpx
 import json
 from discord.ext import tasks
@@ -47,7 +46,6 @@ def parseRSS(url):
 
 @tasks.loop(seconds=15)
 async def check(last):
-    await client.wait_until_ready()
 
     res = parseRSS('https://tuttop.com/rss.xml')
     text = { 'desc': res['desc'], 'sys': '', 'about': ''}
@@ -91,10 +89,6 @@ async def check(last):
         #await asyncio.sleep(15)
 
 @client.event
-async def on_ready():
-    print(f"Logged in as: {client.user.name}")
-
-@client.event
 async def on_message(msg):
     if msg.content.startswith('***'):
         db = rJson()
@@ -112,7 +106,9 @@ async def on_message(msg):
         wJson(db)
         await channel.send(f'Упоминание о `{title}`, добавлено в коллекцию пользователя - `{msg.author.nick}`.')
 
-#client.loop.create_task(check(last))
-db = rJson()
-print(db.keys())
+@client.event
+async def on_ready():
+    print(f"Logged in as: {client.user.name}")
+    check.start()
+
 client.run(settings['token'])
