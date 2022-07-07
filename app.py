@@ -101,7 +101,6 @@ async def on_message(msg):
         channel = msg.channel
 
         if str(msg.author.id) in db.keys():
-            print('yes')
             if title.lower() not in db[str(msg.author.id)]:
                 db[str(msg.author.id)].append(title.lower())
             else:
