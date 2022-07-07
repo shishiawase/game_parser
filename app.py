@@ -8,7 +8,6 @@ from discord.ext import tasks
 from config import settings
 
 client = discord.Client()
-last = open('./last.txt').read()
 
 def rJson():
     path = './userslib/db.json'
@@ -45,8 +44,8 @@ def parseRSS(url):
     return game
 
 @tasks.loop(seconds=15)
-async def check(last):
-
+async def check():
+    last = open('./last.txt').read()
     res = parseRSS('https://tuttop.com/rss.xml')
     text = { 'desc': res['desc'], 'sys': '', 'about': ''}
 
