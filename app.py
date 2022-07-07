@@ -4,6 +4,7 @@ import feedparser
 import discord
 import httpx
 import json
+from secrets import choice
 from discord.ext import tasks
 from config import settings
 
@@ -76,8 +77,14 @@ async def check():
             i = i.replace(word, f"`{word}`")
             text['about'] += (i + '\n')
         
+        #random color embed
+        charColor = 'abcdef0123456789'
+        color = '0x'
+        for i in range(6):
+            color += choice(charColor)
+
         embed = discord.Embed(
-            color=0x3498db,
+            color=color,
             title=res['title'],
             description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
             )
@@ -85,7 +92,6 @@ async def check():
 
         channel = client.get_channel(settings['channel'])
         await channel.send(' '.join(mention), embed=embed)
-        #await asyncio.sleep(15)
 
 @client.event
 async def on_message(msg):
