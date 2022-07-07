@@ -30,6 +30,7 @@ def parseRSS(url):
     abKeys = ['Жанр', 'Разраб', 'Плат', 'Язык', 'Размер']
     sysreq = feed.turbo_content[feed.turbo_content.find('Системные'):].replace('<b><span style="color:#FF0000">', '')
     
+    if 'торрент' in feed.title: feed.title = feed.title.replace(' - торрент', '')
     game['title'] = feed.title
     game['link'] = feed.link
     game['img'] = feed.summary[(feed.summary.find('src') + 5):(feed.summary.find('jpg') + 3)]
