@@ -4,7 +4,7 @@ import feedparser
 import discord
 import httpx
 import json
-from secrets import choice
+from random import randint
 from discord.ext import tasks
 from config import settings
 
@@ -77,14 +77,9 @@ async def check():
             i = i.replace(word, f"`{word}`")
             text['about'] += (i + '\n')
         
-        #random color embed
-        charColor = 'abcdef0123456789'
-        color = '0x'
-        for i in range(6):
-            color += choice(charColor)
-
         embed = discord.Embed(
-            color=color,
+            #random color
+            color=randint(0, 0xFFFFFF),
             title=res['title'],
             description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
             )
@@ -101,6 +96,7 @@ async def on_message(msg):
         channel = msg.channel
 
         if str(msg.author.id) in db.keys():
+            print('yes')
             if title.lower() not in db[str(msg.author.id)]:
                 db[str(msg.author.id)].append(title.lower())
             else:
