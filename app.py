@@ -24,26 +24,35 @@ def wJson(obj):
         json.dump(obj, f)
 
 def parseRSS(url):
-    feed = feedparser.parse(url)['entries'][0]
-    game = {'title': '', 'link': '', 'img': '', 'desc': '', 'sys': [], 'about': []}
-    sysKeys = ['Операц', 'Проц', 'Операт', 'Видео', 'Место']
-    abKeys = ['Жанр', 'Разраб', 'Плат', 'Язык', 'Размер']
-    sysreq = feed.turbo_content[feed.turbo_content.find('Системные'):].replace('<b><span style="color:#FF0000">', '')
-    
-    if 'торрент' in feed.title: feed.title = feed.title.replace(' - торрент', '')
-    game['title'] = feed.title
-    game['link'] = feed.link
-    game['img'] = feed.summary[(feed.summary.find('src') + 5):(feed.summary.find('jpg') + 3)]
-    game['desc'] = feed.summary[(feed.summary.rfind('/>') + 2):]
-    
-    for i in sysKeys:
-        if sysreq.find(i) != -1:
-            game['sys'].append(sysreq[sysreq.find(i):sysreq.find('<', sysreq.find(i))])
-    for i in abKeys:
-        if sysreq.find(i) != -1:
-            game['about'].append(sysreq[sysreq.find(i):sysreq.find('<', sysreq.find(i))])
+    try:
+        feed = feedparser.parse(url)
+        if feed['status'] == 200:
+            feed = feed['entries'][0]
+            game = {'title': '', 'link': '', 'img': '', 'desc': '', 'sys': [], 'about': []}
+            sysKeys = ['Операц', 'Проц', 'Операт', 'Видео', 'Место']
+            abKeys = ['Жанр', 'Разраб', 'Плат', 'Язык', 'Размер']
+            sysreq = feed.turbo_content[feed.turbo_content.find('Системные'):].replace('<b><span style="color:#FF0000">', '')
 
-    return game
+            if feed.summary.find('jpg') == -1: game['img'] = feed.summary[(feed.summary.find('src') + 5):(feed.summary.find('jpg') + 3)]
+            else: game['img'] = feed.summary[(feed.summary.find('src') + 5):(feed.summary.find('png') + 3)]
+            game['title'] = feed.title.replace(' - торрент', '')
+            game['link'] = feed.link
+            game['desc'] = feed.summary[(feed.summary.rfind('/>') + 2):]
+    
+            for i in sysKeys:
+                if sysreq.find(i) != -1:
+                    game['sys'].append(sysreq[sysreq.find(i):sysreq.find('<', sysreq.find(i))])
+            for i in abKeys:
+                if sysreq.find(i) != -1:
+                    game['about'].append(sysreq[sysreq.find(i):sysreq.find('<', sysreq.find(i))])
+
+            return game
+        else:
+            print('parse_status_error: ' + feed['status'])
+            return False
+    except:
+        print('parse_error')
+        return False
 
 @tasks.loop(seconds=15)
 async def check():
@@ -51,43 +60,44 @@ async def check():
     res = parseRSS('https://tuttop.com/rss.xml')
     text = { 'desc': res['desc'], 'sys': '', 'about': ''}
 
-    if last != res['title'].lower():
-        last = res['title'].lower()
-        with open('./last.txt', 'w') as f:
-            f.write(last)
+    if res:
+        if last != res['title'].lower():
+            last = res['title'].lower()
+            with open('./last.txt', 'w') as f:
+                f.write(last)
 
-        resp = httpx.get(res['link']).text
-        start = resp.find('https://tuttop.com/torrent')
-        end = resp.find('.torrent', start)
-        url = resp[start:end + 8]
+            resp = httpx.get(res['link']).text
+            start = resp.find('https://tuttop.com/torrent')
+            end = resp.find('.torrent', start)
+            url = resp[start:end + 8]
 
-        db = rJson()
-        mention = []
+            db = rJson()
+            mention = []
         
-        for u in db.keys():
-            for t in db[u]:
-                if last.find(t) != -1:
-                    mention.append(f'<@{u}>')
+            for u in db.keys():
+                for t in db[u]:
+                    if last.find(t) != -1:
+                        mention.append(f'<@{u}>')
 
-        for i in res['sys']:
-            word = i.partition(':')[0]
-            i = i.replace(word, f"`{word}`")
-            text['sys'] += (i + '\n')
-        for i in res['about']:
-            word = i.partition(':')[0]
-            i = i.replace(word, f"`{word}`")
-            text['about'] += (i + '\n')
+            for i in res['sys']:
+                word = i.partition(':')[0]
+                i = i.replace(word, f"`{word}`")
+                text['sys'] += (i + '\n')
+            for i in res['about']:
+                word = i.partition(':')[0]
+                i = i.replace(word, f"`{word}`")
+                text['about'] += (i + '\n')
         
-        embed = discord.Embed(
-            #random color
-            color=randint(0, 0xFFFFFF),
-            title=res['title'],
-            description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
-            )
-        embed.set_image(url=res['img'])
+            embed = discord.Embed(
+                #random color
+                color=randint(0, 0xFFFFFF),
+                title=res['title'],
+                description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
+                )
+            embed.set_image(url=res['img'])
 
-        channel = client.get_channel(settings['channel'])
-        await channel.send(' '.join(mention), embed=embed)
+            channel = client.get_channel(settings['channel'])
+            await channel.send(' '.join(mention), embed=embed)
 
 @client.event
 async def on_message(msg):
