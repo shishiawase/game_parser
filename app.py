@@ -5,10 +5,12 @@ import discord
 import httpx
 import json
 from random import randint
+from bs4 import BeautifulSoup
 from discord.ext import tasks
 from config import settings
 
 client = discord.Client()
+cli = httpx.Client()
 
 def rJson():
     path = './userslib/db.json'
@@ -22,6 +24,39 @@ def wJson(obj):
     path = './userslib/db.json'
     with open(path, 'w') as f:
         json.dump(obj, f)
+
+def search(title):
+    obj = {}
+    words = [' - игра на стадии разработки', ' полная версия на русском - торрент', ' - полная версия', ' - торрент']
+    data = {
+        'do': 'search',
+        'subaction': 'search',
+        'story': title
+    }
+
+    res = cli.post('https://tuttop.com', data=data)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    titles = soup.findAll('div', class_='main-news-title')
+
+    if len(titles) == 0:
+        return False
+
+    for t in titles:
+        name = t.a.string
+        for i in words:
+            name = name.replace(i, '')
+        obj[name] = t.a.get('href')
+    
+    return obj
+
+def getGame(title, link):
+    res = cli.get(link)
+    soup = BeautifulSoup(res.text, 'html.parser').find('div', class_='full-news-content')
+    obj = {'title': title, 'link': link}
+    obj['img'] = 'https://tuttop.com' + soup.div.img.get('src')
+    obj['torrent'] = soup.find('div', class_='button_download').a.get('href')
+
+    return obj
 
 def parseRSS(url):
     try:
@@ -101,21 +136,65 @@ async def check():
 
 @client.event
 async def on_message(msg):
-    if msg.content.startswith('***'):
-        db = rJson()
-        title = msg.content.replace('*** ', '')
-        channel = msg.channel
+    channel = msg.channel
+    if channel.id == settings['channel'] and msg.author != client.user:
 
-        if str(msg.author.id) in db.keys():
-            print('yes')
-            if title.lower() not in db[str(msg.author.id)]:
-                db[str(msg.author.id)].append(title.lower())
-            else:
-                await channel.send(f'`{title} уже существует в вашей коллекции.`')
+        if msg.content.startswith('***'):
+            db = rJson()
+            title = msg.content.replace('*** ', '')
+
+            if str(msg.author.id) in db.keys():
+                if title.lower() not in db[str(msg.author.id)]:
+                    db[str(msg.author.id)].append(title.lower())
+                else:
+                    await channel.send(f'`{title} уже существует в вашей коллекции.`')
+                    return
+            else: db[str(msg.author.id)] = [title.lower()]
+        
+            await channel.send(f'Упоминание о `{title}`, добавлено в коллекцию пользователя - `{msg.author.nick}`.')
+
+        elif msg.content.startswith('!s'):
+            def Check(m):
+                return m.channel.id == channel.id and m.author.id == msg.author.id
+
+            title = msg.content.replace('!s ', '')
+            obj = search(title)
+            if not obj:
+                await channel.send('Совпадений не найдено.')
                 return
-        else: db[str(msg.author.id)] = [title.lower()]
-        wJson(db)
-        await channel.send(f'Упоминание о `{title}`, добавлено в коллекцию пользователя - `{msg.author.nick}`.')
+
+            if len(obj) == 1:
+                game = getGame(list(obj.keys())[0], obj[list(obj.keys())[0]])
+
+                embed = discord.Embed(
+                    color=randint(0, 0xFFFFFF),
+                    title=game['title'],
+                    description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']})"
+                )
+                embed.set_image(url=game['img'])
+                await channel.send(embed=embed)
+            else:
+                text = '\n'
+                for i in range(len(obj)):
+                    text += f"\n`{i + 1}` - *{list(obj.keys())[i]}*"
+
+                m = await channel.send(f"**Найдено {len(obj)} совпадений:**{text}\n\nПришлите цифру желаемой игры.")
+                try: message = await client.wait_for('message', check=Check, timeout=60)
+                except: pass
+
+                if message.content.isdigit():
+                    i = int(message.content)
+
+                    await m.delete()
+                    game = getGame(list(obj.keys())[i - 1], obj[list(obj.keys())[i - 1]])
+
+                    embed = discord.Embed(
+                        color=randint(0, 0xFFFFFF),
+                        title=game['title'],
+                        description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']})"
+                    )
+                    embed.set_image(url=game['img'])
+                    await channel.send(embed=embed)
 
 @client.event
 async def on_ready():
