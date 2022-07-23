@@ -93,46 +93,46 @@ def parseRSS(url):
 async def check():
     last = open('./last.txt').read()
     res = parseRSS('https://tuttop.com/rss.xml')
+    if not res: return
     text = { 'desc': res['desc'], 'sys': '', 'about': ''}
 
-    if res:
-        if last != res['title'].lower():
-            last = res['title'].lower()
-            with open('./last.txt', 'w') as f:
-                f.write(last)
+    if last != res['title'].lower():
+        last = res['title'].lower()
+        with open('./last.txt', 'w') as f:
+            f.write(last)
 
-            resp = httpx.get(res['link']).text
-            start = resp.find('https://tuttop.com/torrent')
-            end = resp.find('.torrent', start)
-            url = resp[start:end + 8]
+        resp = httpx.get(res['link']).text
+        start = resp.find('https://tuttop.com/torrent')
+        end = resp.find('.torrent', start)
+        url = resp[start:end + 8]
 
-            db = rJson()
-            mention = []
+        db = rJson()
+        mention = []
         
-            for u in db.keys():
-                for t in db[u]:
-                    if last.find(t) != -1:
-                        mention.append(f'<@{u}>')
+        for u in db.keys():
+            for t in db[u]:
+                if last.find(t) != -1:
+                    mention.append(f'<@{u}>')
 
-            for i in res['sys']:
-                word = i.partition(':')[0]
-                i = i.replace(word, f"`{word}`")
-                text['sys'] += (i + '\n')
-            for i in res['about']:
-                word = i.partition(':')[0]
-                i = i.replace(word, f"`{word}`")
-                text['about'] += (i + '\n')
+        for i in res['sys']:
+            word = i.partition(':')[0]
+            i = i.replace(word, f"`{word}`")
+            text['sys'] += (i + '\n')
+        for i in res['about']:
+            word = i.partition(':')[0]
+            i = i.replace(word, f"`{word}`")
+            text['about'] += (i + '\n')
         
-            embed = discord.Embed(
-                #random color
-                color=randint(0, 0xFFFFFF),
-                title=res['title'],
-                description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
-                )
-            embed.set_image(url=res['img'])
+        embed = discord.Embed(
+            #random color
+            color=randint(0, 0xFFFFFF),
+            title=res['title'],
+            description=f"{text['desc']}\n\n\n**Системные требования:**\n{text['sys']}\n**Об игре:**\n{text['about']}\n[Подробности]({res['link']})\n[Cкачать торрент]({url})"
+            )
+        embed.set_image(url=res['img'])
 
-            channel = client.get_channel(settings['channel'])
-            await channel.send(' '.join(mention), embed=embed)
+        channel = client.get_channel(settings['channel'])
+        await channel.send(' '.join(mention), embed=embed)
 
 @client.event
 async def on_message(msg):
@@ -186,6 +186,7 @@ async def on_message(msg):
                     i = int(message.content)
 
                     await m.delete()
+                    await message.delete()
                     game = getGame(list(obj.keys())[i - 1], obj[list(obj.keys())[i - 1]])
 
                     embed = discord.Embed(
