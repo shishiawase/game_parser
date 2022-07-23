@@ -12,7 +12,11 @@
 
 ## Установка
 + Установить зависимости:
-```$ pip install -r requirements.txt```
+```
+$ pip install -r requirements.txt
+```
 + Изменить ```config.py``` и выставить свой токен и id канала
 + Запуск:
-```$ python3 app.py```
+```
+$ python3 app.py
+```
