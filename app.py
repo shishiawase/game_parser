@@ -170,7 +170,7 @@ async def on_message(msg):
                 embed = discord.Embed(
                     color=randint(0, 0xFFFFFF),
                     title=game['title'],
-                    description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']}) {game['size']}"
+                    description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']}) - {str(game['size'])}"
                 )
                 embed.set_image(url=game['img'])
                 await channel.send(embed=embed)
