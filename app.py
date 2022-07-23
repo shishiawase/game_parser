@@ -181,7 +181,9 @@ async def on_message(msg):
 
                 m = await channel.send(f"**Найдено {len(obj)} совпадений:**{text}\n\nПришлите цифру желаемой игры.")
                 try: message = await client.wait_for('message', check=Check, timeout=60)
-                except: pass
+                except:
+                    await msg.delete()
+                    await m.delete()
 
                 if message.content.isdigit():
                     i = int(message.content)
