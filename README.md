@@ -1,12 +1,11 @@
-# Tuttop_Discord
-Discord bot to get the latest added game from the site - tuttop.com
-+ Possibility to receive a notification for a certain game through a command in the discord:
-```
-*** game_title
-```
+# Bot for Discord which parses games from the site tuttop.com
 
 Дискорд бот для получения последней добавленной игры с сайта - tuttop.com
-+ Возможность получения уведомления для опредeленной игры через команду в дискорде:
++ Возможность получения уведомления для опредeленной (когда она появляется или обновляется на сайте) игры через команду в дискорде:
 ```
 *** название_игры
+```
++ Поиск игры и торрента к ней в дискорде:
+```
+!s название_игры
 ```
