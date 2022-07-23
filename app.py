@@ -55,6 +55,7 @@ def getGame(title, link):
     obj = {'title': title, 'link': link}
     obj['img'] = 'https://tuttop.com' + soup.div.img.get('src')
     obj['torrent'] = soup.find('div', class_='button_download').a.get('href')
+    obj['size'] = soup.find('div', class_='button_download').find('div', class_='rightbt').text
 
     return obj
 
@@ -169,7 +170,7 @@ async def on_message(msg):
                 embed = discord.Embed(
                     color=randint(0, 0xFFFFFF),
                     title=game['title'],
-                    description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']})"
+                    description=f"\n[Подробности]({game['link']})\n[Cкачать торрент]({game['torrent']}) {game['size']}"
                 )
                 embed.set_image(url=game['img'])
                 await channel.send(embed=embed)
