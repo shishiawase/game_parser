@@ -147,10 +147,13 @@ async def on_message(msg):
             if str(msg.author.id) in db.keys():
                 if title.lower() not in db[str(msg.author.id)]:
                     db[str(msg.author.id)].append(title.lower())
+                    wJson(db)
                 else:
                     await channel.send(f'`{title} уже существует в вашей коллекции.`')
                     return
-            else: db[str(msg.author.id)] = [title.lower()]
+            else:
+                db[str(msg.author.id)] = [title.lower()]
+                wJson(db)
         
             await channel.send(f'Упоминание о `{title}`, добавлено в коллекцию пользователя - `{msg.author.nick}`.')
 
